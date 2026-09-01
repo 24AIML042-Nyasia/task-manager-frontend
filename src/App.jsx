@@ -109,7 +109,7 @@ export default function App() {
   // ------------------------------------------------------
   const handleToggle = async (task) => {
     try {
-      const json = await updateTask(task._id, { completed: !task.completed });
+      const json = await updateTask(task._id, { title: task.title, completed: !task.completed });
       if (handle401(json)) return;
 
       if (json.success) {
