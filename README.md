@@ -17,23 +17,35 @@ npm run dev
 
 App will be available at `http://localhost:5173`.
 
-## What It Does
+## Usage
 
-- Fetches tasks from the backend on load
-- Create a task using the input form and Add Task button
-- Check a task to mark it complete, uncheck to mark it incomplete
-- Incomplete and completed tasks are shown in separate sections
-- Delete a task with the Delete button (confirmation required)
+1. Open the app in your browser
+2. Register a new account with email and password
+3. Log in to access your tasks
+4. Create, complete, and delete tasks from the main screen
+5. Click logout to end your session — the token is cleared from the browser
+6. If your session expires (1 hour), you will be redirected to login automatically
+
+## Features
+
+- Register and login with email and password
+- JWT token stored in localStorage, persists across page refreshes
+- Email shown in header on reload without re-logging in
+- Create tasks, mark complete/incomplete with checkbox, delete with confirmation
+- Incomplete and completed tasks shown in separate sections
+- Token expiry handled: 401 response redirects to login
+- Logout clears token and resets state
 
 ## Project Structure
 
 ```
 src/
-  App.jsx               main component, all CRUD logic and UI
+  App.jsx                  main component, CRUD logic, auth state, UI
   components/
-    api.js              fetch wrappers for all backend endpoints
-  index.css             base reset and background colour
-main.jsx                app entry point
+    api.js                 fetch wrappers for all backend endpoints
+    AuthForm.jsx           login and register form
+  index.css                base reset and background colour
+main.jsx                   app entry point
 ```
 
 ## Backend Repo

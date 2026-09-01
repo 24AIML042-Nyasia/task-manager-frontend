@@ -22,7 +22,17 @@ const C = {
 export default function App() {
   // ── auth state ──────────────────────────────────────────────────────────────
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const t = localStorage.getItem('token');
+    if (!t) return null;
+    try {
+      // JWT payload is the middle base64 segment
+      const payload = JSON.parse(atob(t.split('.')[1]));
+      return { email: payload.email, id: payload.id };
+    } catch {
+      return null;
+    }
+  });
 
   // ── task state ──────────────────────────────────────────────────────────────
   const [tasks, setTasks] = useState([]);
