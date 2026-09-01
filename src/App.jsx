@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { getTasks, createTask, updateTask, deleteTask } from './components/api';
+import AuthForm from './components/AuthForm';
 
 // ── brown palette ─────────────────────────────────────────────────────────────
 const C = {
-  pageBg:      '#2c1a0e',   // dark espresso background
-  cardBg:      '#3d2410',   // slightly lighter brown card
-  rowBg:       '#4a2c14',   // task row background
-  rowBorder:   '#6b3d1e',   // row border
-  accent:      '#c8813a',   // warm amber-brown, Add Task button, left border incomplete
-  accentHover: '#b06d2a',
-  done:        '#8a6040',   // muted brown for completed left border
-  text:        '#f5e6d3',   // warm cream text
-  textMuted:   '#a07850',   // muted brown-tan
+  pageBg:      '#2c1a0e',
+  cardBg:      '#3d2410',
+  rowBg:       '#4a2c14',
+  rowBorder:   '#6b3d1e',
+  accent:      '#c8813a',
+  done:        '#8a6040',
+  text:        '#f5e6d3',
+  textMuted:   '#a07850',
   inputBg:     '#2c1a0e',
   inputBorder: '#6b3d1e',
   errorBg:     '#5c1a1a',
@@ -20,34 +20,65 @@ const C = {
 };
 
 export default function App() {
+  // ── auth state ──────────────────────────────────────────────────────────────
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // ── task state ──────────────────────────────────────────────────────────────
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ── called by AuthForm on successful login/register ─────────────────────────
+  const handleAuth = (newToken, user) => {
+    setToken(newToken);
+    setCurrentUser(user);
+  };
+
+  // ── logout: clear token and reset state ────────────────────────────────────
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setCurrentUser(null);
+    setTasks([]);
+    setError(null);
+  };
+
+  // ── 401 helper: any 401 from the API triggers logout ───────────────────────
+  const handle401 = (json) => {
+    if (json && json.success === false &&
+        (json.error || '').toLowerCase().includes('token')) {
+      handleLogout();
+      return true;
+    }
+    return false;
+  };
+
   // ------------------------------------------------------
-  // 1. READ: Fetch all tasks on component mount
+  // 1. READ: Fetch all tasks when token is present
   // ------------------------------------------------------
   const fetchTasks = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const json = await getTasks();
+      if (handle401(json)) return;
       if (json.success) {
         setTasks(json.data);
       } else {
         setError(json.error || json.message || 'Failed to load tasks');
       }
     } catch (err) {
-      setError('Network error. Is the Express backend running on port 5000?');
+      setError('Network error. Is the backend running on port 5000?');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (token) fetchTasks();
+  }, [token]);
 
   // ------------------------------------------------------
   // 2. CREATE: Add a new task
@@ -59,6 +90,7 @@ export default function App() {
     try {
       const numericId = Date.now();
       const json = await createTask({ id: numericId, title: newTaskTitle.trim() });
+      if (handle401(json)) return;
 
       if (json.success) {
         setTasks([json.data, ...tasks]);
@@ -78,6 +110,7 @@ export default function App() {
   const handleToggle = async (task) => {
     try {
       const json = await updateTask(task._id, { completed: !task.completed });
+      if (handle401(json)) return;
 
       if (json.success) {
         setTasks(tasks.map((t) => (t._id === task._id ? json.data : t)));
@@ -90,13 +123,14 @@ export default function App() {
   };
 
   // ------------------------------------------------------
-  // 4. DELETE: Remove a task
+  // 4. DELETE: Confirm then remove
   // ------------------------------------------------------
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
 
     try {
       const json = await deleteTask(id);
+      if (handle401(json)) return;
 
       if (json.success) {
         setTasks(tasks.filter((t) => t._id !== id));
@@ -108,32 +142,46 @@ export default function App() {
     }
   };
 
+  // ── show auth form if not logged in ────────────────────────────────────────
+  if (!token) {
+    return <AuthForm onAuth={handleAuth} />;
+  }
+
   const incomplete = tasks.filter((t) => !t.completed);
   const completed  = tasks.filter((t) => t.completed);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: C.pageBg,
-      padding: '40px 16px 80px',
-    }}>
-      <div style={{
-        maxWidth: '560px',
-        margin: '0 auto',
-        fontFamily: 'Georgia, serif',
-      }}>
+    <div style={{ minHeight: '100vh', background: C.pageBg, padding: '40px 16px 80px' }}>
+      <div style={{ maxWidth: '560px', margin: '0 auto', fontFamily: 'Georgia, serif' }}>
 
-        {/* Title */}
-        <h1 style={{
-          textAlign: 'center',
-          marginBottom: '28px',
-          fontSize: '26px',
-          color: C.text,
-          fontWeight: '700',
-          letterSpacing: '0.5px',
-        }}>
-          Task Manager
-        </h1>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+          <h1 style={{ color: C.text, fontSize: '26px', fontWeight: '700', letterSpacing: '0.5px' }}>
+            Task Manager
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {currentUser && (
+              <span style={{ color: C.textMuted, fontSize: '13px', fontFamily: 'sans-serif' }}>
+                {currentUser.email}
+              </span>
+            )}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '7px 14px',
+                background: 'transparent',
+                color: C.textMuted,
+                border: `1px solid ${C.rowBorder}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontFamily: 'sans-serif',
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
 
         {/* Error banner */}
         {error && (
@@ -151,10 +199,7 @@ export default function App() {
         )}
 
         {/* Create form */}
-        <form
-          onSubmit={handleCreate}
-          style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}
-        >
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
           <input
             type="text"
             value={newTaskTitle}
@@ -204,59 +249,39 @@ export default function App() {
           </p>
         )}
 
-        {/* ── Incomplete tasks ── */}
+        {/* Incomplete tasks */}
         {!isLoading && incomplete.length > 0 && (
           <section style={{ marginBottom: '32px' }}>
             <h2 style={{
-              fontSize: '11px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: C.textMuted,
-              marginBottom: '10px',
-              fontFamily: 'sans-serif',
-              borderBottom: `1px solid ${C.headingLine}`,
+              fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+              letterSpacing: '0.1em', color: C.textMuted, marginBottom: '10px',
+              fontFamily: 'sans-serif', borderBottom: `1px solid ${C.headingLine}`,
               paddingBottom: '6px',
             }}>
               Tasks: {incomplete.length}
             </h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {incomplete.map((task) => (
-                <TaskRow
-                  key={task._id}
-                  task={task}
-                  onToggle={handleToggle}
-                  onDelete={handleDelete}
-                />
+                <TaskRow key={task._id} task={task} onToggle={handleToggle} onDelete={handleDelete} />
               ))}
             </ul>
           </section>
         )}
 
-        {/* ── Completed tasks ── */}
+        {/* Completed tasks */}
         {!isLoading && completed.length > 0 && (
           <section>
             <h2 style={{
-              fontSize: '11px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: C.textMuted,
-              marginBottom: '10px',
-              fontFamily: 'sans-serif',
-              borderBottom: `1px solid ${C.headingLine}`,
+              fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+              letterSpacing: '0.1em', color: C.textMuted, marginBottom: '10px',
+              fontFamily: 'sans-serif', borderBottom: `1px solid ${C.headingLine}`,
               paddingBottom: '6px',
             }}>
               Completed: {completed.length}
             </h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {completed.map((task) => (
-                <TaskRow
-                  key={task._id}
-                  task={task}
-                  onToggle={handleToggle}
-                  onDelete={handleDelete}
-                />
+                <TaskRow key={task._id} task={task} onToggle={handleToggle} onDelete={handleDelete} />
               ))}
             </ul>
           </section>
