@@ -19,6 +19,20 @@ export const loginUser = (email, password) =>
     body: JSON.stringify({ email, password })
   }).then(res => res.json());
 
+export const forgotPassword = (email) =>
+  fetch(`${BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  }).then(res => res.json());
+
+export const resetPassword = (token, password) =>
+  fetch(`${BASE_URL}/auth/reset-password/${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  }).then(res => res.json());
+
 export const getMe = () =>
   fetch(`${BASE_URL}/auth/me`, {
     headers: { ...authHeader() }
@@ -34,14 +48,14 @@ export const createTask = (taskData) =>
   fetch(`${BASE_URL}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify(taskData)
+    body: JSON.stringify(taskData)  // taskData includes id, title, status
   }).then(res => res.json());
 
 export const updateTask = (id, taskData) =>
   fetch(`${BASE_URL}/tasks/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify(taskData)
+    body: JSON.stringify(taskData)  // taskData includes title, status, completed
   }).then(res => res.json());
 
 export const deleteTask = (id) =>
