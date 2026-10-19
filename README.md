@@ -10,6 +10,21 @@ Connects to the Express + MongoDB backend at `http://localhost:5000`.
 
 ## Setup and Run
 
+### Option 1: Docker (recommended, runs everything with one command)
+
+From the `TASKMGR` root folder:
+
+```bash
+# Copy the example env file and fill in your secrets
+cp .env.example .env
+
+docker-compose up --build
+```
+
+App will be available at http://localhost:5173.
+
+### Option 2: Local development
+
 ```bash
 npm install
 npm run dev
