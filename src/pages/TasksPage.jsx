@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTasks, createTask, updateTask, deleteTask } from '../components/api';
-import { C, STATUS_THEME, NEXT_STATUS, STATUS_LABEL, fmt } from '../theme';
+import { C, STATUS_THEME, NEXT_STATUS, STATUS_LABEL, fmt, PRIORITY_ORDER, PRIORITY_THEME } from '../theme';
 
 export default function TasksPage({ currentUser, onLogout }) {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState('medium');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -44,11 +45,12 @@ export default function TasksPage({ currentUser, onLogout }) {
     if (!newTaskTitle.trim()) return;
     setError(null);
     try {
-      const json = await createTask({ id: Date.now(), title: newTaskTitle.trim(), status: 'pending' });
+      const json = await createTask({ id: Date.now(), title: newTaskTitle.trim(), status: 'pending', priority: newTaskPriority });
       if (handle401(json)) return;
       if (json.success) {
         setTasks([json.data, ...tasks]);
         setNewTaskTitle('');
+        setNewTaskPriority('medium');
       } else {
         setError(json.error || json.message || 'Failed to create task.');
       }
@@ -92,9 +94,13 @@ export default function TasksPage({ currentUser, onLogout }) {
     }
   };
 
-  const pending   = tasks.filter((t) => (t.status || 'pending') === 'pending');
-  const ongoing   = tasks.filter((t) => (t.status || 'pending') === 'ongoing');
-  const completed = tasks.filter((t) => (t.status || 'pending') === 'completed');
+  // Sort tasks high -> medium -> low within each status section
+  const byPriority = (a, b) =>
+    (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1);
+
+  const pending   = tasks.filter((t) => (t.status || 'pending') === 'pending').sort(byPriority);
+  const ongoing   = tasks.filter((t) => (t.status || 'pending') === 'ongoing').sort(byPriority);
+  const completed = tasks.filter((t) => (t.status || 'pending') === 'completed').sort(byPriority);
 
   return (
     <div style={{ minHeight: '100vh', background: C.pageBg, padding: '40px 16px 80px' }}>
@@ -137,18 +143,32 @@ export default function TasksPage({ currentUser, onLogout }) {
         )}
 
         {/* Create form */}
-        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             placeholder="New task title..."
             style={{
-              flex: 1, padding: '10px 13px', borderRadius: '6px',
+              flex: 1, minWidth: '160px', padding: '10px 13px', borderRadius: '6px',
               border: `1px solid ${C.inputBorder}`, background: C.inputBg,
               color: C.text, fontSize: '15px', outline: 'none', fontFamily: 'sans-serif',
             }}
           />
+          <select
+            value={newTaskPriority}
+            onChange={(e) => setNewTaskPriority(e.target.value)}
+            style={{
+              padding: '10px 12px', borderRadius: '6px',
+              border: `1px solid ${C.inputBorder}`, background: C.inputBg,
+              color: C.text, fontSize: '14px', outline: 'none',
+              fontFamily: 'sans-serif', cursor: 'pointer',
+            }}
+          >
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
           <button type="submit" style={{
             padding: '10px 18px', background: C.accent, color: '#fff',
             border: 'none', borderRadius: '6px', cursor: 'pointer',
@@ -212,6 +232,20 @@ function TaskRow({ task, onCycle, onDelete }) {
         <span style={{ flexGrow: 1, fontSize: '15px', fontFamily: 'sans-serif', textDecoration: status === 'completed' ? 'line-through' : 'none', color: status === 'completed' ? C.textMuted : C.text }}>
           {task.title}
         </span>
+        {/* Priority badge */}
+        {task.priority && (() => {
+          const p = PRIORITY_THEME[task.priority];
+          return (
+            <span style={{
+              fontSize: '10px', fontWeight: '700', textTransform: 'uppercase',
+              letterSpacing: '0.05em', padding: '2px 8px', borderRadius: '99px',
+              background: p.bg, color: p.text, fontFamily: 'sans-serif',
+              flexShrink: 0,
+            }}>
+              {p.label}
+            </span>
+          );
+        })()}
         <button onClick={() => onDelete(task._id)} style={{ padding: '5px 11px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontFamily: 'sans-serif' }}>
           Delete
         </button>

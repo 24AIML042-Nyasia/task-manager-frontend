@@ -57,3 +57,12 @@ export function fmt(dateStr) {
     hour: '2-digit', minute: '2-digit',
   });
 }
+
+// Priority sort order — high first
+export const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+
+export const PRIORITY_THEME = {
+  high:   { bg: '#4a0a0a', text: '#ff8080', label: 'High' },
+  medium: { bg: '#4a3a0a', text: '#f0d060', label: 'Medium' },
+  low:    { bg: '#0a2a1a', text: '#70c080', label: 'Low' },
+};
