@@ -1,7 +1,10 @@
 # Task Manager Frontend
 
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://task-manager-frontend-nyasia.vercel.app)
+
 React + Vite frontend for the full-stack Task Manager app.
-Connects to the Express + MongoDB backend at `http://localhost:5000`.
+
+**Live App:** https://task-manager-frontend-nyasia.vercel.app
 
 ## Requirements
 
