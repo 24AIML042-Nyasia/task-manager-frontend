@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // ── token helpers ─────────────────────────────────────────────────────────────
 export const getToken = () => localStorage.getItem('token');
@@ -62,4 +62,12 @@ export const deleteTask = (id) =>
   fetch(`${BASE_URL}/tasks/${id}`, {
     method: 'DELETE',
     headers: { ...authHeader() }
+  }).then(res => res.json());
+
+// ── AI endpoint ───────────────────────────────────────────────────────────────
+export const generateDescription = (title) =>
+  fetch(`${BASE_URL}/api/ai/generate-description`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ title })
   }).then(res => res.json());
